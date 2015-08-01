@@ -2,204 +2,73 @@
  * Module Dependencies
  */
 
-var utils = require('./utils');
+var util = require('util');
 var express = require('express');
-
-/**
- * HTTP error definitions - Code and Text
- */
-var httpErrors = {
-	unsupported: {
-		code: 501,
-		text: "Not Implemented"
-	},
-	error: {
-		code: 500,
-		text: "Internal Server Error"
-	},
-	notFound: {
-		code: 404,
-		text: "Not Found"
-	},
-	badRequest: {
-		code: 400,
-		text: "Bad Request"
-	}
-};
-
-function httpError(error, res) {
-	var http = httpErrors[error];
-	if(!http) {
-		console.log("unknown error "+error);
-		http = httpErrors.error;
-	}
-	res.status(http.code);
-	res.end(http.text);
-}
-
+var MemoryDB = require('express-aks-driver-memory');
 
 /**
  * Initalize the Key Server
- * @param {Object} db Database driver that implements methods as described in './drivers/generic'
  * @param {Object} options Options for the AKS instance
  */
-function AKS(db, options) {
-	var useIndex = options.useIndex || true,
-		trustProxy = options.trustProxy || false,
-		baseUri = options.baseUri || '/',
-		uri = baseUri + 'users';
+function AKS(options) {
+	options = util._extend({
+		trustProxy: false,
+		db: new MemoryDB(),
+	}, options);
+
 
 	var version = this.version = 1;
+	var app = express();
 
-	this.db = db;
-	this.app = express();
-
-	if(trustProxy) {
-		this.app.enable('trust proxy');
+	if (options.trustProxy) {
+		app.enable('trust proxy');
 	}
 
-	this.app.get(uri + '/', function(req, res) {
-
-		if(!useIndex) {
-
-			// Index of all keys is unsupported
-			httpError('unsupported', res);
-			return;
-
+	function handleError(err, req, res) {
+		if (err === 'email malformed') {
+			res.status(400);
+			res.end(err);
 		}
+		else {
+			res.status(500);
+			res.end(err);
+		}
+	}
 
-		// retrieve all the available usernames with associated references to keys
-		db.find(function(err, keys) {
-
-			if(err) {
-				console.log(err);
-				httpError('error', res);
-				return;
-			}
-
-			if(!keys) {
-				httpError('notFound', res);
-				return;
-			}
-
-			var displayKeys = {
-				version: version,
-				keys: []
-			};
-
-			keys.forEach(function(key) {
-				displayKeys.keys.push({
-					path: key.domain + '/' + key.user
-				});
-			});
-
-			res.status(200);
-			res.json(displayKeys);
-
-		});
-
+	app.get('/', function(req, res) {
+		// Index of all keys is unsupported
+		// 1) it could be a heavy request.
+		// 2) it exposes a lot of user information to spammers.
+		httpError('unsupported', res);
+		return;
 	});
 
-	this.app.get(uri + '/:domain/', function(req, res) {
-
-		var domain = req.params.domain;
-
-		if(!useIndex) {
-
-			// Index of all keys is unsupported
-			httpError('unsupported', res);
-			return;
-
-		}
-
-		// retrieve all users for this domain with associated references to keys
-		db.find(domain, function(err, keys) {
-
-			if(err) {
-				console.log(err);
-				httpError('error', res);
-				return;
-			}
-
-			if(!keys) {
-				httpError('notFound', res);
-				return;
-			}
-
-			var displayKeys = {
-				version: version,
-				keys: []
-			};
-
-			keys.forEach(function(key) {
-				displayKeys.keys.push({
-					path: key.user
-				});
-			});
-
-			res.status(200);
-			res.json(displayKeys);
-
-		});
-
-	});
-
-	this.app.get(uri + '/:domain/:user', function(req, res) {
-
-		var email = req.params.user + '@' + req.params.domain;
-
-		if(!utils.isValidEmail(email)) {
-			httpError('badRequest', res);
-			return;
-		}
-
+	app.get('/:email', function(req, res) {
 		// retrieve the key associated with this email address
-		db.findOne(email, function(err, key) {
-
-			if(err) {
-				console.log(err);
-				httpError('error', res);
+		options.db.findOne(req.params.email, function(err, key) {
+			if (err) {
+				handleError(err, req, res);
 				return;
 			}
-
-			if(!key || (key && !key.keytext)) {
-				httpError('notFound', res);
-				return;
-			}
-
 			res.setHeader('Content-Type', 'application/pgp-keys'); // as described in RFC-3156 (http://tools.ietf.org/html/rfc3156)
 			res.status(200);
 			res.end(key.keytext);
-
 		});
-
 	});
 
-	return this;
+	app.post('/:email', function(req, res) {
+		options.db.add(req.params.email, req.body, function(err, key) {
+			if (err) {
+				handleError(err, req, res);
+				return;
+			}
+			res.setHeader('Content-Type', 'application/pgp-keys'); // as described in RFC-3156 (http://tools.ietf.org/html/rfc3156)
+			res.status(200);
+			res.end(key.keytext);
+		});
+	});
+
+	return app;
 }
 
-AKS.prototype.listen = function(port, host, callback) {
-	if(parseInt(port,10).toString() === port.toString()) {
-		args = Array.prototype.slice.call(arguments, 1);
-	} else {
-		port = 11371;
-		args = Array.prototype.slice.call(arguments);
-	}
-	
-	args.unshift(port);
-
-	return this.app.listen.apply(this.app, args);
-};
-
-/**
- * Export the Authoritative Key Server
- */
-
-exports.Server = AKS;
-
-
-/**
- * Export the standard database drivers
- */
-
-exports.drivers = require('./drivers');
+module.exports = AKS;

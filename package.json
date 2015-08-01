@@ -1,11 +1,10 @@
 {
-  "name": "aks",
-  "description": "Authoritative PGP Key Server",
-  "version": "0.2.0",
-  "author": {
-    "name": "Trey Griffith",
-    "email": "trey.griffith@gmail.com"
-  },
+  "name": "express-aks",
+  "description": "Authoritative PGP Key Server for Express",
+  "version": "0.0.0",
+  "maintainers": [
+    "Darrel O'Pry <darrel.opry@spry-group.com>"
+  ],
   "keywords": [
     "pgp",
     "OpenPGP",
@@ -16,21 +15,26 @@
     "hakp"
   ],
   "dependencies": {
-  	"express" : "3.1.x",
-  	"mongoose": "3.5.x",
-  	"mongoose-types": "1.0.x",
-  	"filequeue": "0.1.2"
+    "express": "^4.13.2",
+    "express-aks-driver-memory": "dopry/express-aks-driver-memory"
   },
   "devDependencies": {
-  	"mocha": "1.8.x"
+    "coveralls": "^2.11.3",
+    "istanbul": "^0.3.17",
+    "mocha": "^2.2.5",
+    "mocha-lcov-reporter": "0.0.2",
+    "superagent": "^1.2.0"
   },
   "main": "./index.js",
+  "scripts": {
+    "test": "node_modules/.bin/mocha"
+  },
   "engines": {
-    "node": "0.8.x"
+    "node": ">=0.10.x"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/treygriffith/aks.git"
+    "url": "git://github.com/dopry/express-aks.git"
   },
-  "homepage": "https://github.com/treygriffith/aks"
+  "homepage": "https://github.com/dopry/express-aks"
 }
