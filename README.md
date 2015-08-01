@@ -1,5 +1,11 @@
 express-aks
 ========================
+[![Build Status](https://travis-ci.org/dopry/express-aks.svg?branch=master)](https://travis-ci.org/dopry/express-aks)
+
+[![Dependency Status](https://david-dm.org/dopry/express-aks.svg)](https://david-dm.org/dopry/express-aks)
+
+[![Coverage Status](https://coveralls.io/repos/dopry/express-aks/badge.svg?branch=master&service=github)](https://coveralls.io/github/dopry/express-aks?branch=master)
+
 `express-aks` is a restful GPG key server inspired by and derived from Trey Griffith's [HTTP Authoritative Keyserver Protocol](https://github.com/AuthoritativeKeyServerWG/aks/wiki/Protocol).
 
 Installation
