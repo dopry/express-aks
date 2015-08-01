@@ -40,10 +40,8 @@ app.use('/keyserver', aks);
 app.listen();
 ```
 
-Options
--------
 
-#### Server Options
+* Server Options *
 
 The AKS server accepts an options object on contruction.
 The possible properties for the options object are:
